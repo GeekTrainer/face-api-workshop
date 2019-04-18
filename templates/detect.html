@@ -1,0 +1,26 @@
+<!doctype html>
+
+<html>
+
+<head>
+    <title>See who's in your picture</title>
+</head>
+
+<body>
+    <h1>Upload a picture to see who's in it!</h1>
+    <form method=post enctype=multipart/form-data>
+        <div>
+            <label>Upload picture</label>
+            <input name="file" type="file" />
+        </div>
+        <div>
+            <button type="submit">Upload</button>
+        </div>
+    </form>
+
+    <div>
+        {% for name in names %}
+            <div>{{name}}</div>
+        {% endfor %}
+    </div>
+</body>
