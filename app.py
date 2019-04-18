@@ -23,8 +23,10 @@ def train():
 
     # Look to see if the name already exists
     # If not create it
-    person = next(p for p in people if p.name.lower() == name.lower())
+    operation = "Updated"
+    person = next((p for p in people if p.name.lower() == name.lower()), None)
     if not person:
+        operation = "Created"
         person = face_client.person_group_person.create(group_id, name)
 
     # Add the picture to the person
@@ -32,7 +34,7 @@ def train():
 
     # Train the model
     face_client.person_group.train(group_id)
-    return 'uploaded picture successfully!!'
+    return render_template('train.html', message="{} {}".format(operation, name))
 
 @app.route('/detect', methods=['GET', 'POST'])
 def detect():
@@ -53,11 +55,17 @@ def detect():
     names = []
     for result in results:
         # Find the top candidate for each possible face
-        top_candidate = sorted(result.candidates, key=lambda c: c.confidence, reverse=True)[0]
-        # See who the person is
-        person = face_client.person_group_person.get('build', top_candidate.person_id)
-        if top_candidate.confidence > .8:
-            names.append('I see ' + person.name)
-        else:
-            names.append('I think I see ' + person.name)
-    return render_template('detect.html', names=names)
+        candidates = sorted(result.candidates, key=lambda c: c.confidence, reverse=True)
+        # Was anyone recognized?
+        if len(candidates) > 0:
+            top_candidate = candidates[0]
+            # See who the person is
+            person = face_client.person_group_person.get('build', top_candidate.person_id)
+            if top_candidate.confidence > .8:
+                names.append('I see ' + person.name)
+            else:
+                names.append('I think I see ' + person.name)
+    if len(names) > 0:
+        return render_template('detect.html', names=names)
+    else:
+        return render_template('detect.html', message="Sorry, nobody looks familiar")
