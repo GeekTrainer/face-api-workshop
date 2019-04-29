@@ -11,6 +11,7 @@ face_client = FaceClient(endpoint=url, credentials=CognitiveServicesCredentials(
 
 @app.route('/train', methods=['GET', 'POST'])
 def train():
+    # Boiler plate to either display basic page or retrieve uploaded file
     if request.method == 'GET':
         return render_template('train.html')
     elif 'file' not in request.files:
@@ -34,10 +35,13 @@ def train():
 
     # Train the model
     face_client.person_group.train(group_id)
+
+    # Display the page to the user
     return render_template('train.html', message="{} {}".format(operation, name))
 
 @app.route('/detect', methods=['GET', 'POST'])
 def detect():
+    # Boiler plate to either display basic page or retrieve uploaded file
     if request.method == 'GET':
         return render_template('detect.html')
     elif 'file' not in request.files:
@@ -54,18 +58,24 @@ def detect():
     results = face_client.face.identify(face_ids, 'build')
     names = []
     for result in results:
-        # Find the top candidate for each possible face
+        # Find the top candidate for each face
         candidates = sorted(result.candidates, key=lambda c: c.confidence, reverse=True)
         # Was anyone recognized?
         if len(candidates) > 0:
+            # Get just the top candidate
             top_candidate = candidates[0]
             # See who the person is
             person = face_client.person_group_person.get('build', top_candidate.person_id)
+
+            # How certain are we this is the person?
             if top_candidate.confidence > .8:
                 names.append('I see ' + person.name)
             else:
                 names.append('I think I see ' + person.name)
+    
     if len(names) > 0:
+        # Display the people
         return render_template('detect.html', names=names)
     else:
+        # Display an error message
         return render_template('detect.html', message="Sorry, nobody looks familiar")
