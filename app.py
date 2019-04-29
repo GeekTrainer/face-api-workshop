@@ -31,10 +31,10 @@ def train():
         person = face_client.person_group_person.create(group_id, name)
 
     # Add the picture to the person
-    face_client.person_group_person.add_face_from_stream(group_id, person.person_id, image)
+    ### CODE GOES HERE
 
     # Train the model
-    face_client.person_group.train(group_id)
+    ### CODE GOES HERE
 
     # Display the page to the user
     return render_template('train.html', message="{} {}".format(operation, name))
@@ -68,10 +68,7 @@ def detect():
             person = face_client.person_group_person.get('build', top_candidate.person_id)
 
             # How certain are we this is the person?
-            if top_candidate.confidence > .8:
-                names.append('I see ' + person.name)
-            else:
-                names.append('I think I see ' + person.name)
+            ### CODE GOES HERE
     
     if len(names) > 0:
         # Display the people
