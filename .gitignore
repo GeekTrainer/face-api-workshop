@@ -1,5 +1,7 @@
 # virtual environment
 face-venv
+venv
+.env
 
 .vscode
 

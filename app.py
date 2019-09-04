@@ -1,33 +1,48 @@
 from azure.cognitiveservices.vision.face import FaceClient
 from msrest.authentication import CognitiveServicesCredentials
 from flask import Flask, request, render_template
+import os
+import traceback
+from dotenv import load_dotenv
+load_dotenv()
 app = Flask(__name__)
 
-key = '910d00a739d442ab9e523be23e6ec9e5'
-url = 'https://westus.api.cognitive.microsoft.com'
-group_id = 'build'
+key = os.environ.get('API_KEY')
+url = os.environ.get('API_ENDPOINT')
+group_id = 'workshop'
 
 face_client = FaceClient(endpoint=url, credentials=CognitiveServicesCredentials(key))
 
 @app.route('/train', methods=['GET', 'POST'])
 def train():
+    try:
+        # See if the person group is already created
+        # Will fail if not already created
+        face_client.person_group.get(group_id)
+    except:
+        # Create the group
+        face_client.person_group.create(group_id)
+
     # Boiler plate to either display basic page or retrieve uploaded file
     if request.method == 'GET':
         return render_template('train.html')
     elif 'file' not in request.files:
         return 'No file detected'
+
+    # Get the image from the form
     image = request.files['file']
-    name = request.form['name']
+    # Get the name from the form
+    name = request.form['name'].lower()
 
     # Get all the people in the group
     people = face_client.person_group_person.list(group_id)
 
     # Look to see if the name already exists
     # If not create it
-    operation = "Updated"
-    person = next((p for p in people if p.name.lower() == name.lower()), None)
+    operation_name = "Updated"
+    person = next((p for p in people if p.name.lower() == name), None)
     if not person:
-        operation = "Created"
+        operation_name = "Created"
         person = face_client.person_group_person.create(group_id, name)
 
     # Add the picture to the person
@@ -37,7 +52,7 @@ def train():
     face_client.person_group.train(group_id)
 
     # Display the page to the user
-    return render_template('train.html', message="{} {}".format(operation, name))
+    return render_template('train.html', message="{} {}".format(operation_name, name))
 
 @app.route('/detect', methods=['GET', 'POST'])
 def detect():
@@ -55,7 +70,7 @@ def detect():
     face_ids = list(map((lambda f: f.face_id), faces))
 
     # Ask Azure who the faces are
-    results = face_client.face.identify(face_ids, 'build')
+    results = face_client.face.identify(face_ids, group_id)
     names = []
     for result in results:
         # Find the top candidate for each face
@@ -65,7 +80,7 @@ def detect():
             # Get just the top candidate
             top_candidate = candidates[0]
             # See who the person is
-            person = face_client.person_group_person.get('build', top_candidate.person_id)
+            person = face_client.person_group_person.get(group_id, top_candidate.person_id)
 
             # How certain are we this is the person?
             if top_candidate.confidence > .8:
