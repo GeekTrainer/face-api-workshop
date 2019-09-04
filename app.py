@@ -16,29 +16,24 @@ face_client = FaceClient(endpoint=url, credentials=CognitiveServicesCredentials(
 @app.route('/train', methods=['GET', 'POST'])
 def train():
     try:
-        # See if the person group is already created
-        # Will fail if not already created
+        # Check for our group
         face_client.person_group.get(group_id)
     except:
         # Create the group
         face_client.person_group.create(group_id)
 
-    # Boiler plate to either display basic page or retrieve uploaded file
     if request.method == 'GET':
         return render_template('train.html')
     elif 'file' not in request.files:
         return 'No file detected'
 
-    # Get the image from the form
     image = request.files['file']
-    # Get the name from the form
     name = request.form['name'].lower()
 
     # Get all the people in the group
     people = face_client.person_group_person.list(group_id)
 
     # Look to see if the name already exists
-    # If not create it
     operation_name = "Updated"
     person = next((p for p in people if p.name.lower() == name), None)
     if not person:
